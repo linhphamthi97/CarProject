@@ -5,7 +5,7 @@ created on: 02.02.2020
 This file contains all of the settings to change about the simulation or the model.
 =#
 
-module settings
+module Settings
 export u_initial, x_initial, horizon_length
 # Simulation parameters
 

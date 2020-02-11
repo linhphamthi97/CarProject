@@ -25,14 +25,12 @@ function main()
     # Intialise parameters
     u = settings.u_initial
     x = settings.x_initial
-
     x_ref = Vector{Float64}(undef, 4)
-
     x_plan = Vector{Float64}(undef, 4)
     u_plan = Vector{Float64}(undef, 2)
 
     # Create an animation
-    anim = @animate for i in 1:20
+    anim = @animate for i in 1:1
         println("Timestep ", i)
 
         # Plot the current position and the track
@@ -40,8 +38,8 @@ function main()
 
         # Set reference state
         x_ref = set_reference_state(x)
-        println("Current state: ", x)
-        println(" Reference state: ", x_ref)
+        # println("Current state: ", x)
+        # println(" Reference state: ", x_ref)
 
         # Run the MPC control optimization
         x_plan, u = run_mpc(x_ref, x, u, settings.horizon_length)
@@ -51,9 +49,9 @@ function main()
 
         # Apply the planned inputs and simulate one step in time
         x = simulation(x, u)
-        println("x after simulation= ", x)
-        println(" ")
-        println(" ")
+        # println("x after simulation= ", x)
+        # println(" ")
+        # println(" ")
 
     end
 
