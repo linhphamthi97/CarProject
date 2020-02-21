@@ -26,7 +26,7 @@ function main()
     u = settings.u_initial
     x = settings.x_initial
     x_ref = Vector{Float64}(undef, 4)
-    x_plan = Vector{Float64}(undef, 4)
+    x_plan = repeat(settings.x_initial, 1, 2)
     u_plan = Vector{Float64}(undef, 2)
 
     # Create an animation
@@ -42,7 +42,7 @@ function main()
         # println(" Reference state: ", x_ref)
 
         # Run the MPC control optimization
-        x_plan, u = run_mpc(x_ref, x, u, settings.horizon_length)
+        x_plan, u = run_mpc(x_ref, x, u, x_plan, settings.horizon_length)
 
         # Draw the planned future states from the MPC optimization
         plot!(x_plan[1, :], x_plan[2, :], linewidth=5)
