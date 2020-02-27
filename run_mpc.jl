@@ -6,7 +6,7 @@ This function uses the Ipopt and JuMP packages to solve a non-linear optimizatio
 =#
 using Ipopt, JuMP, LinearAlgebra
 
-function run_mpc(x_ref, x, u_last, x_plan_prev, horizon_length)
+function run_mpc(xr, x, ul, x_plan_prev, horizon_length)
 
     # time1=time()
     # Parameters
@@ -39,7 +39,9 @@ function run_mpc(x_ref, x, u_last, x_plan_prev, horizon_length)
 
     # Variables
         @variable(model, x[1:4, 1:horizon_length])
+        @variable(model, x_ref[1:4, 1:horizon_length])
         @variable(model, u[1:2, 1:horizon_length])
+        @variable(model, u_last[1:2])
 
     # Warm start
         for i = 1:horizon_length
@@ -48,10 +50,14 @@ function run_mpc(x_ref, x, u_last, x_plan_prev, horizon_length)
             end
 
             for j=1:2
-                set_start_value(u[j,i], u_last[j])
+                set_start_value(u[j,i], ul[j])
             end
         end
 
+    # constraint the dummy variables to the input variables
+    # we create these dummies to be used in the user-defined functions
+    @constraint(model, x_ref .== xr)
+    @constraint(model, u_last .== ul)
 
     # Initial conditions
         @constraint(model, [j=1:4], x[j,1] == x_current[j])
@@ -76,27 +82,76 @@ function run_mpc(x_ref, x, u_last, x_plan_prev, horizon_length)
     # TODO: add track boundary constaints
 
     # Setting objective function
-    #=
-    # METHOD 1: Use macro, can't feed gradients in, but it works
-        @NLobjective(model, Min,
-            sum(Q[j,j]*(x[j,i]-x_ref[j,i])^2 for i in 1:settings.horizon_length for j in 1:4) +
-            sum(R[j,j]*(u[j,i]-u[j,i-1])^2 for i in 2:settings.horizon_length for j in 1:2) +
-            sum(R[j,j]*(u[j,1]-u_last[j])^2 for j in 1:2))
+    #
+    # # METHOD 1: Use macro, can't feed gradients in, but it works
+    #     @NLobjective(model, Min,
+    #         sum(Q[j,j]*(x[j,i]-x_ref[j,i])^2 for i in 1:settings.horizon_length for j in 1:4) +
+    #         sum(R[j,j]*(u[j,i]-u[j,i-1])^2 for i in 2:settings.horizon_length for j in 1:2) +
+    #         sum(R[j,j]*(u[j,1]-u_last[j])^2 for j in 1:2))
 
     # METHOD 2: Register a function, use macro, doesn't work because the
     #           user-defined function must have scalar inputs
 
-        JuMP.register(model, :my_objective_function, 22 + 10*horizon_length, state_ref_obj_func, autodiff=true)
-        a=[x, x_ref, u, u_last, Q, R]
-        @NLobjective(model, Min, my_objective_function(a...))
+    # MG: HERE I AM ASSUMING DIAGONAL MATRICES R AND Q!!!!!
+    function state_cost(x...)
+        d = div(length(x), 2)
+        return sum(Q[j, j] * (x[j] - x[j + d])^2 for j in 1:d)
+    end
+
+    function ∇state_cost(g, x...)
+        d = div(length(x), 2)
+        for j = 1:d
+            g[j] = 2 * Q[j, j] * (x[j] - x[j + d])
+        end
+        for j = 1:d
+            g[j + d] = -2 * Q[j, j] * (x[j] - x[j + d])
+        end
+    end
+
+    function input_cost(u...)
+        d = div(length(u), 2)
+        return sum(R[j, j] * (u[j] - u[j + d])^2 for j in 1:d)
+    end
+
+    function ∇input_cost(g, u...)
+        d = div(length(u), 2)
+        for j = 1:d
+            g[j] = 2 * R[j, j] * (u[j] - u[j + d])
+        end
+        for j = 1:d
+            g[j + d] = -2 * R[j, j] * (u[j] - u[j + d])
+        end
+    end
+
+    function input_last(u...)
+        return R[1, 1] * (u[1] - u[3])^2 + R[2, 2] * (u[2] - u[4])^2
+    end
+
+    function ∇input_last(g, u...)
+        g[1] = 2 * R[1, 1] * (u[1] - u[3])
+        g[2] = 2 * R[2, 2] * (u[2] - u[4])
+        g[3] = -2 * R[1, 1] * (u[1] - u[3])
+        g[4] = -2 * R[2, 2] * (u[2] - u[4])
+    end
+
+
+    JuMP.register(model, :state_cost, 8, state_cost, ∇state_cost)
+    JuMP.register(model, :input_cost, 4, input_cost, ∇input_cost)
+    JuMP.register(model, :input_last, 4, input_last, ∇input_last)
+
+    @NLobjective(model, Min,
+    sum(state_cost(x[1, i], x[2, i], x[3, i], x[4, i], x_ref[1, i], x_ref[2, i], x_ref[3, i], x_ref[4, i]) for i in 1:settings.horizon_length) +
+    sum(input_cost(u[1, i], u[2, i], u[1, i - 1], u[2, i - 1]) for i in 2:settings.horizon_length) +
+    input_last(u[1, 1], u[2, 1], u_last[1], u_last[2]))
+
 
     # METHOD 3: Register a fuction, use the set_NL_objective function to set
     #           objective function instead, don't know the right syntax
-        JuMP.register(model, :my_objective_function, 22 + 10*horizon_length, state_ref_obj_func, autodiff=true)
-        JuMP.set_NL_objective(model, :Min, :my_objective_function,
-                            [x[i,j] for i=1:4 for j=1:horizon_length])
+        # JuMP.register(model, :my_objective_function, 22 + 10*horizon_length, state_ref_obj_func, autodiff=true)
+        # JuMP.set_NL_objective(model, :Min, :my_objective_function,
+        #                     [x[i,j] for i=1:4 for j=1:horizon_length])
 
-    =#
+    #
 
     # time4=time()
 
@@ -114,7 +169,7 @@ function run_mpc(x_ref, x, u_last, x_plan_prev, horizon_length)
     return JuMP.value.(x), JuMP.value.(u)[:,1]
 end
 
-state_ref_obj_func(x, x_ref, u, u_last, Q, R, horizon_length) =
-    sum(a[5][j,j]*(a[1][j,i]-a[2][j,i])^2 for i in 1:horizon_length for j in 1:4) +
-    sum(a[6][j,j]*(a[3][j,i]-a[3][j,i-1])^2 for i in 2:horizon_length for j in 1:2) +
-    sum(a[6][j,j]*(a[3][j,1]-a[4][j])^2 for j in 1:2)
+# state_ref_obj_func(x, x_ref, u, u_last, Q, R, horizon_length) =
+#     sum(a[5][j,j]*(a[1][j,i]-a[2][j,i])^2 for i in 1:horizon_length for j in 1:4) +
+#     sum(a[6][j,j]*(a[3][j,i]-a[3][j,i-1])^2 for i in 2:horizon_length for j in 1:2) +
+#     sum(a[6][j,j]*(a[3][j,1]-a[4][j])^2 for j in 1:2)
