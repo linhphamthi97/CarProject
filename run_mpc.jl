@@ -8,7 +8,6 @@ using Ipopt, JuMP, LinearAlgebra
 
 function run_mpc(xr, x, ul, x_plan_prev, horizon_length)
 
-    # time1=time()
     # Parameters
         delta_t = 0.1
 
@@ -31,11 +30,7 @@ function run_mpc(xr, x, ul, x_plan_prev, horizon_length)
         # Reduced air resistance coefficient (0.5 * rho * A * C_d)
         Cr2 = 0.0045
 
-    # time2 = time()
-
-    model = Model(with_optimizer(Ipopt.Optimizer, max_cpu_time=60.0))#, acceptable_tol= 10^-3)) #, print_level=0))
-
-    # time3=time()
+    model = Model(with_optimizer(Ipopt.Optimizer, max_cpu_time=60.0, acceptable_tol= 10^-1, acceptable_iter=3)) #, print_level=0))
 
     # Variables
         @variable(model, x[1:4, 1:horizon_length])
@@ -47,11 +42,16 @@ function run_mpc(xr, x, ul, x_plan_prev, horizon_length)
         for i = 1:horizon_length
             for j=1:4
                 set_start_value(x[j,i], x_plan_prev[j,2])
+                set_start_value(x_ref[j,i], xr[j,i])
             end
 
             for j=1:2
                 set_start_value(u[j,i], ul[j])
             end
+        end
+
+        for j=1:2
+            set_start_value(u_last[j], ul[j])
         end
 
     # constraint the dummy variables to the input variables
@@ -153,18 +153,7 @@ function run_mpc(xr, x, ul, x_plan_prev, horizon_length)
 
     #
 
-    # time4=time()
-
     JuMP.optimize!(model)
-
-    # time5=time()
-
-    # println("Time to set up parameters:", time2-time1, " s")
-    # println("Time to set up model:", time3-time2, " s")
-    # println("Time to set up model contraints and variables:", time4-time3, " s")
-    # println("Time to solve:", time5-time4, " s")
-    # println("")
-
 
     return JuMP.value.(x), JuMP.value.(u)[:,1]
 end

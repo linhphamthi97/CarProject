@@ -37,6 +37,7 @@ function main()
     x_hist = zeros(Float64, N_sim + 1, 4)
     x_hist[1, :] = x
     u_hist = zeros(Float64, N_sim, 2)
+
     # Create an animation
     #anim = @animate for i in 1:1
     for i in 1:N_sim

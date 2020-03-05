@@ -13,13 +13,13 @@ function set_reference_state(x_current)
 
     # Choosing the closest centerline point to current location and use that as reference
         # Load data from csv file, skip first row (header)
-        # data_track = readdlm(".//3yp_track2500.csv", ',', Float64, skipstart = 1)
+        data_track = readdlm(".//3yp_track2500.csv", ',', Float64, skipstart = 1)
 
         # Transpose to fit format of NearestNeighbors package and using the first 2 columns only
-        # data = transpose(data_track[:,1:2])
-        v1 = collect(range(-2, stop=5, length=2500))
-        v2= ones(2500)
-        data = transpose([v1 v2])
+        data = transpose(data_track[:,1:2])
+        # v1 = collect(range(-2, stop=5, length=2500))
+        # v2= ones(2500)
+        # data = transpose([v1 v2])
 
         # Create k-d tree using the data (centerline points)
         tree = KDTree(data, Euclidean(); leafsize=10)
