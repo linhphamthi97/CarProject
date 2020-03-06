@@ -20,17 +20,25 @@ include("settings.jl")
 
 function main()
     # Use the GR backend for Plots.jl, because it's fast
-    gr()
+    # gr()
 
     # Intialise parameters
+
+    N_sim = 20
     u = settings.u_initial
     x = settings.x_initial
     x_ref = Vector{Float64}(undef, 4)
     x_plan = Vector{Float64}(undef, 4)
     u_plan = Vector{Float64}(undef, 2)
 
+
+    # just keep the history for debugging
+    x_hist = zeros(Float64, N_sim + 1, 4)
+    x_hist[1, :] = x
+    u_hist = zeros(Float64, N_sim, 2)
+
     # Create an animation
-    anim = @animate for i in 1:1
+    # anim = @animate for i in 1:1
         println("Timestep ", i)
 
         # Plot the current position and the track
@@ -49,6 +57,10 @@ function main()
 
         # Apply the planned inputs and simulate one step in time
         x = simulation(x, u)
+        # save the history of states and inputs
+        x_hist[i + 1, :] = x
+        u_hist[i, :] = u
+
         # println("x after simulation= ", x)
         # println(" ")
         # println(" ")
@@ -56,8 +68,14 @@ function main()
     end
 
     # Save animation as a gif file
-    gif(anim, "/mpc.gif", fps = 10)
+    # gif(anim, "/mpc.gif", fps = 10)
+
+    return x_plan, x_ref, u_plan, x_hist, u_hist
 
 end
 
-main()
+x_plan, x_ref, u_plan, x_hist, u_hist = main()
+# plot the race track and states
+track2500 = CSV.read("3yp_track2500.csv");
+plot(track2500.x, track2500.y, label = "racetrack-centerline")
+plot!(x_hist[:, 1], x_hist[:, 2], label = "car trajectory")
