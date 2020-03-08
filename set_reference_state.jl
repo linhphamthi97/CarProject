@@ -39,6 +39,5 @@ function set_reference_state(x_current)
     x_ref[3, :] .= 0                          # angular velocity
     x_ref[4, :] .= 1                          # velocity of centre of mass
 
-    return x_ref
-
+    return x_ref, data
 end
