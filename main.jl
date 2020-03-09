@@ -39,6 +39,7 @@ function main()
 
     # Create an animation
     anim = @animate for i in 1:N_sim
+        println("")
         println("Timestep ", i)
 
         # Plot the current position and the track
@@ -51,7 +52,6 @@ function main()
 
         # Run the MPC control optimization
         x_plan, u = run_mpc(x_ref, x, u, x_plan, settings.horizon_length)
-        println("planned x= ", x_plan[1:2, settings.horizon_length])
 
         # Draw the planned future states from the MPC optimization
         plot!(x_plan[1, :], x_plan[2, :], linewidth=5, label="Predicted state")
