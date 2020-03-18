@@ -11,8 +11,8 @@ export u_initial, x_initial, horizon_length, delta_t
     delta_t = 0.1
 
 # Initial conditions
-    u_initial = [0, 0]
-    x_initial = [0, 1, 0.1, 1]
+    u_initial = [0., 0.]
+    x_initial = [0, 1., 0.1, 1.]
 
 # Control model (bicycle model) parameters
     horizon_length = 10

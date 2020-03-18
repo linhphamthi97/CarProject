@@ -8,18 +8,16 @@ Need to use package https://github.com/KristofferC/NearestNeighbors.jl before ru
 using Ipopt, JuMP, LinearAlgebra, NearestNeighbors, DelimitedFiles
 include("settings.jl")
 
-function set_reference_state(x_current)
-    x_ref = Array{Float64}(undef, 4, settings.horizon_length)
+# Choosing the closest centerline point to current location and use that as reference
+# Load data from csv file, skip first row (header)
+data_track = readdlm(".//3yp_track2500.csv", ',', Float64, skipstart = 1)
+# Transpose to fit format of NearestNeighbors package and using the first 2 columns only
+data = transpose(data_track[:,1:2])
 
-    # Choosing the closest centerline point to current location and use that as reference
-        # Load data from csv file, skip first row (header)
-        data_track = readdlm(".//3yp_track2500.csv", ',', Float64, skipstart = 1)
+# Create k-d tree using the data (centerline points)
+tree = KDTree(data, Euclidean(); leafsize=10)
 
-        # Transpose to fit format of NearestNeighbors package and using the first 2 columns only
-        data = transpose(data_track[:,1:2])
-
-        # Create k-d tree using the data (centerline points)
-        tree = KDTree(data, Euclidean(); leafsize=10)
+function set_reference_state(x_current, x_ref)
 
         # Query closest point to current position on centerline
         centerline_point_index, centerline_distance = knn(tree, x_current[1:2], 1, false)
@@ -43,7 +41,7 @@ function set_reference_state(x_current)
             #           begins) or if discontinuity is after the index of
             #           x_ref[1:2,i-1] point: use the point before discontinuity
             #       else use the point with highest index
-            
+
             if maximum(idx[2:end]-idx[1:end-1]) - minimum(idx[2:end]-idx[1:end-1]) == 0
                 data_idx= maximum(idx)
             else
@@ -65,5 +63,5 @@ function set_reference_state(x_current)
     x_ref[3, :] .= 0                          # angular velocity
     x_ref[4, :] .= 1                          # velocity of centre of mass
 
-    return x_ref, data
+    return data
 end
