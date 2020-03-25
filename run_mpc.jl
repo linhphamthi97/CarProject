@@ -2,7 +2,9 @@
 author: Linh Pham Thi
 created on: 20.12.2019
 
-This function uses the Ipopt and JuMP packages to solve a non-linear optimization problem. This problem is formulated in the classical MPC form. This is a state reference follower control.
+This function uses the Ipopt and JuMP packages to solve a non-linear optimization
+ problem. This problem is formulated in the classical MPC form. This is a state
+ reference follower control.
 =#
 
 using Ipopt, JuMP, LinearAlgebra

@@ -1,8 +1,5 @@
 #=
-author: Linh Pham Thi
-created on: 20.12.2019
-
-This function uses the Ipopt and JuMP packages to solve a non-linear optimization problem. This problem is formulated in the classical MPC form. This is a state reference follower control.
+This function builds the MPC model through the JuMP interface.
 =#
 
 using Ipopt, JuMP, LinearAlgebra
@@ -47,7 +44,7 @@ function build_mpc(horizon_length)
     derivative_test = "none",
     hessian_approximation = "exact",
     print_options_documentation="no",
-    print_user_options="no"))#, acceptable_tol= 10^-3)) #, print_level=0))
+    print_user_options="no"))
 
 
     # Variables
