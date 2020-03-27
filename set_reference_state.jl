@@ -16,14 +16,17 @@ function set_reference_state(x_current, x_ref)
     # Choosing the closest centerline point to current location and use that as reference
 
         # Query closest point to current position on centerline
-        centerline_point_index, centerline_distance = knn(track.tree, x_current[1:2], 1, false)
-        centerline_point = track.data_centerline[:,centerline_point_index]
+        close_point_index, distances = knn(track.tree, x_current[1:2], 2, false)
+        close_points = track.data_centerline[:,close_point_index]
+
+        # Linear interpolation between 2 closest points to get centerline point
+        r = sum((close_points[1,i] - close_points[2,i])^2 for i in 1:2)
+        r1 = (distances[2]^2 - distances[1]^2 + r)/(2*r)
+        r2 = 1- r1
 
         # Set reference state
-        x_ref[1,1] = centerline_point[1]        # x coordinate
-        x_ref[2,1] = centerline_point[2]        # y coordinate
-
-        data_idx=centerline_point_index[1]
+        x_ref[1,1] = close_points[1,1]*r1 + close_points[1,2]*r2        # x coordinate
+        x_ref[2,1] = close_points[2,1]*r1 + close_points[2,2]*r2        # y coordinate
 
         # Query next points, within distance v*delta_t away
         for i=2:settings.horizon_length
@@ -39,7 +42,7 @@ function set_reference_state(x_current, x_ref)
             #       else use the point with highest index
 
             if maximum(idx[2:end]-idx[1:end-1]) - minimum(idx[2:end]-idx[1:end-1]) == 0
-                data_idx= maximum(idx)
+                data_idx = maximum(idx)
             else
                 discont_value, discont_idx = findmax(idx[2:end]-idx[1:end-1])
 

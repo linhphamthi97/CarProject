@@ -10,7 +10,7 @@ data_track array columns:
 3: width of track
 4, 5: (x, y) coordinate of inner track bound
 6, 7: (x, y) coordinate of outer track bound
-
+8: s - distance along centerline
 =#
 include("settings.jl")
 
@@ -19,7 +19,7 @@ export data_track, data_centerline, tree
 using LinearAlgebra, NearestNeighbors, DelimitedFiles
 
     # Load data from csv file, skip first row (header)
-    data_track = Array{Float64}(undef, 2500,7)
+    data_track = Array{Float64}(undef, 2500,8)
     data_track[:,1:3] = readdlm(".//3yp_track2500.csv", ',', Float64, skipstart = 1)
 
     # Creating the track bound coordinates
@@ -47,7 +47,14 @@ using LinearAlgebra, NearestNeighbors, DelimitedFiles
         data_track[i,6:7] = orthogonal1 * data_track[i,3]/2 + data_track[i,1:2]
     end
 
-    # TODO: transformation to (s,a) coordinate system
+    # Set 8th column to s (distance along centerline)
+    data_track[1,8] = 0
+    s = 0
+
+    for i=2:2500
+        global s += sqrt((data_track[i,1]-data_track[i-1,1])^2 + (data_track[i,2]-data_track[i-1,2])^2)
+        data_track[i,8] = s
+    end
 
     # Transpose to fit format of NearestNeighbors package and using the first 2 columns only
     data_centerline = transpose(data_track[:,1:2])
