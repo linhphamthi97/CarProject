@@ -75,10 +75,9 @@ function build_mpc(horizon_length)
     x[2,i] == x[2, i-1] + (x[4, i-1] * sin(x[3, i-1]+C1 * u[2, i-1]))*delta_t)
     @NLconstraint(model, [i=2:horizon_length],
     x[3,i] == x[3, i-1] + (C2 * u[2, i-1] * x[4, i-1])*delta_t)
-    @NLconstraint(model, [i=2:horizon_length],
-    x[4,i] == x[4, i-1] + (Cm1 * u[1,i-1] - Cm2 * u[1,i-1] * x[4,i-1] - Cr2 * x[4, i-1] * x[4, i-1])* delta_t - Cr1*delta_t)
+    @NLconstraint(model, [i=2:horizon_length], # x[4,i] == x[4, i-1] + delta_t*u[1,i-1])
 
-    # TODO: add track boundary constaints
+    x[4,i] == x[4, i-1] + (Cm1 * u[1,i-1] - Cm2 * u[1,i-1] * x[4,i-1] - Cr2 * x[4, i-1] * x[4, i-1])* delta_t - Cr1*delta_t)
 
     # Setting objective function
     @NLobjective(model, Min,

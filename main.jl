@@ -24,8 +24,6 @@ function main()
     gr()
 
     # Intialise parameters
-
-    N_sim = 50
     u = settings.u_initial
     x = settings.x_initial
     x_ref = Array{Float64}(undef, 4, settings.horizon_length)
@@ -33,17 +31,16 @@ function main()
     u_plan = repeat(settings.u_initial, 1, settings.horizon_length)
     track_data = Array{Float64}(undef, 2500, 7)
 
-
     # just keep the history for debugging
-    x_hist = zeros(Float64, N_sim + 1, 4)
+    x_hist = zeros(Float64, settings.N_sim + 1, 4)
     x_hist[1, :] = x
-    u_hist = zeros(Float64, N_sim, 2)
+    u_hist = zeros(Float64, settings.N_sim, 2)
 
     # initialise the MPC solver
     mpcsolver = build_mpc(settings.horizon_length)
 
     # Create an animation
-    anim = @animate for i in 1:N_sim
+    anim = @animate for i in 1:settings.N_sim
 
         # Plot the current position and the track
         plot([x[1]], [x[2]], marker=(:hex, 10), xlim=(-2, 8), ylim=(-4, 2), label="", legend=:bottomright)
@@ -87,3 +84,4 @@ plot(track2500.x, track2500.y, label = "racetrack-centerline", color=:blue, lege
 plot!(x_hist[:, 1], x_hist[:, 2], label = "car trajectory", color=:red)
 plot!(track_data[:,4], track_data[:,5], color=:black, label="")
 plot!(track_data[:,6], track_data[:,7], color=:black, label="")
+savefig("e:\\4yp_images\\figure")

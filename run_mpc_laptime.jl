@@ -1,10 +1,7 @@
 #=
-author: Linh Pham Thi
-created on: 20.12.2019
-
 This function uses the Ipopt and JuMP packages to solve a non-linear optimization
- problem. This problem is formulated in the classical MPC form. This is a state
- reference follower control.
+ problem. This problem is formulated in the classical MPC form. This is the laptime
+ minimizer.
 =#
 
 using Ipopt, JuMP, LinearAlgebra
@@ -33,15 +30,10 @@ function warm_start(mpcsolver, x_plan_prev, u_plan_prev, N)
 
 end
 
-function run_mpc(mpcsolver, xinit, xref, x_plan_prev, u_plan_prev, N)
+function run_mpc(mpcsolver, xinit, x_plan_prev, u_plan_prev, N)
 
     # warm start the x/u trajectories
     # warm_start(mpcsolver, x_plan_prev, u_plan_prev, N)
-
-    #update the IPOPT parameters modelling the reference trajectory
-    for i = 1:4, j=1:N
-        JuMP.set_value(mpcsolver.xref_param[i,j], xref[i,j])
-    end
 
     #update parametric initial state
     for i = 1:4
@@ -54,6 +46,8 @@ function run_mpc(mpcsolver, xinit, xref, x_plan_prev, u_plan_prev, N)
     end
 
     JuMP.optimize!(mpcsolver.model)
-    println("Objective function value: ", objective_value(mpcsolver.model))
+    # println("Objective function value: ", objective_value(mpcsolver.model))
+    # println("First obj func part: ", -sum(JuMP.value.(mpcsolver.xvar)[1,i] for i in 1:settings.horizon_length))
+    # println("Third obj func part: ", sum(JuMP.value.(mpcsolver.xvar)[4,i] for i in 1:settings.horizon_length))
     return JuMP.value.(mpcsolver.xvar), JuMP.value.(mpcsolver.uvar)
 end

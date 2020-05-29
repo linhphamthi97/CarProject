@@ -57,7 +57,7 @@ function set_reference_state(x_current, x_ref)
 
     # Set reference state
     x_ref[3, :] .= 0                          # angular velocity
-    x_ref[4, :] .= 1                          # velocity of centre of mass
+    x_ref[4, :] .= settings.target_velocity                          # velocity of centre of mass
 
     return track.data_track
 end
